@@ -1,0 +1,123 @@
+---
+title: "Survey Tools Tutorial"
+author: "Dr. Simon Wallace"
+date: "`r Sys.Date()`"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Tutorial}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r setup, include = FALSE}
+library(surveytools)
+library(tidyverse)
+knitr::opts_chunk$set(
+	eval = FALSE,
+	collapse = TRUE,
+	comment = "#>"
+)
+```
+
+SurveyTools is a package that enables easy formatting and exploration of survey data. Within this package you can format survey data, append or construct audiences, create tables and visualisations before exporting the results to excel tables or the top 10 insights to mobile friendly cards.
+
+This vignette will take you through the workflow of formatting survey data into a format that Survey Tools can use and how to export the resulting analysis into excel formatted index tables. We have included an example data set within the package that can be used to follow the vignette called `demo`.
+
+## Formatting survey data.
+
+The manipulation and analysis of survey data is usually with the goal of obtaining count or percentage tables for a set of audience segments to the questions we have asked. SurveyTools is designed to make this a more streamlined process based around two additional attributes we add to each column - labels and tabulate. 
+
+Labels are fairly self explanatory, however `surveytools` has a specified format that it uses based around three components - Section, Group, and Question.
+
+When looking at tabulate attributes the responses to survey questions typically fall into one of three categories:
+
++ Factor
++ Binary
++ Multiple Choice
+
+So within `surveytools` we have assigned the parameter tabulate to allow the functions to readily identify how to handle the data. The corresponding tabulate parameters for the response categories above are:
+
++ Factor (column)
++ Binary (binary)
++ Multiple Choice (multiple_choice)
+
+The `tabulate` functions then handle the responses in an appropriate way returning the percentage and count of responses.
+
+N.B. Care must be taken when labelling as during calculation in `tabulate.tibble()` we split the data into groups based upon the combination of Section, Group, and the tabulate parameter treating them as one subset. This is particularly important when dealing with multiple choice responses.
+
+Let us demonstrate this now using a data file present in `surveytools` which is the result of reading in a csv file
+```{r,eval=FALSE}
+demoRaw <- read_csv('demo.csv')
+```
+
+We can view the parameters that the functions within `surveytools` with the function `tabulate.parameters`, although in this case there are no parameters attached. There is an option to export the current parameters to a .csv file which can be easily edited. We can export the parameters like so:
+
+```{r,eval=FALSE}
+get_attributes(demoRaw,export=TRUE,filename='demoExportedParameters.csv')
+```
+
+A core difference between the downloaded file and the returned value from `tabulate.parameters` is that we split the label into Section, Group, and Question for ease of editing.
+
+Once we have finished assigning parameters in the file we can load in and attach the parameters to the initial data easily using `import.tabulate.parameters`. This function takes a file location and a data structure and recombines Section, Group, and Question into labels for attaching to the data.
+
+```{r,eval=FALSE}
+demo <- import_attributes('demoExportedParameters.csv',demo)
+```
+
+The tabulate parameters are then assigned to the data structure. We are displaying the first 20 below.
+
+```{r echo=FALSE, message=FALSE, warning=FALSE,eval=TRUE}
+knitr::kable(get_attributes(demo)[1:10,])
+```
+
+In this you can see one of the two final tabulate parameters: weight and segment. These parameters are primarly used for easy identification during analysis.
+
+## Creating index tables
+
+Now we have a formatted data structure we can use it to create a set of tables like so:
+
+```{r}
+test <- tabulate_data(demo)
+```
+
+This creates an unweighted and unsegmented set of tables, however arguments within `tabulate_data()` allow us to weight and segment tables.
+
+`surveytools` is designed to work with the tidyverse data structure tibbles and will store them as such by default. We can weight the tables by specifying a weight column like so:
+
+```{r}
+weighted <- tabulate_data(demo,weights=demo['Weight_global'])
+```
+
+We can also specify a set of columns to be treated as segments to break the tables down by. We can select multiple columns which can be either "named" or "binary" segment definitions, if multiple columns are selected they don't have to be the same type as each other i.e. named or binary. The specification is the same as the weights column like so:
+
+```{r}
+segmentedCountry <- tabulate_data(demo,weights=demo['Weight_global'],segments=demo['Country'])
+```
+
+We mentioned briefly at the top of this section about the tabulate parameter "segment". Whilst it is designed primarily for use in the UI, there is a function that allows us to extract all the columns with this tabulate parameter. The result of this function `extract_segment` can then be used directly in `tabulate.tibble`.
+
+```{r}
+segmentedLifestage <- tabulate_data(demo,weights=demo['Weight_global'],segments=extract_segments(demo))
+```
+
+Within `tabulate.tibble` there is an argument `addBase` which if set to `TRUE` will add a segment called "Base" which is the baseline percentage for the response to each question.
+
+```{r}
+segmentedBasedLifestage <- tabulate_data(demo,weights=demo['Weight_global'],segments=extract_segments(demo),addBase = TRUE)
+```
+
+The segment "Base" is useful, especially when creating indexed tables which we shall do now.
+
+## Index tables
+
+We can construct a set of indexed tables for a specified base segment using the function `indexClassify`, we will illustrate this now using the segment 'Base' that we created using the `addBase` arguement in `tabulate.tibble()`.
+
+```{r}
+indexedBasedLifestage <- index_table(segmentedBasedLifestage,'Base')
+```
+
+## Finally
+
+`surveytools` has documentation for any function and more functions than those outlined above. If you have any questions please contact:
+
+Dr. Simon Wallace - simon.wallace[@]mindshareworld.com
