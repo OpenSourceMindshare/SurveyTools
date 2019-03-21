@@ -8,12 +8,12 @@
 #' @param tabulateParams tabulate parameters to reattach
 #'
 #' @return tibble with tabulate attributes
-# attach_attribute_vectors <- function(x,labels,tabulateParams){
-#   for(i in 1:ncol(x)){
-#     attr(x[[i]],'label') <- labels[i]
-#     attr(x[[i]],'tabulate') <- tabulateParams[i]
-#   }
-#   return(x)
-# }
-#
+ attach_attribute_vectors <- function(x,labels,tabulateParams){
+   for(i in 1:ncol(x)){
+     attr(x[[i]],'label') <- labels[i]
+     attr(x[[i]],'tabulate') <- tabulateParams[i]
+   }
+   return(x)
+ }
+
 #
